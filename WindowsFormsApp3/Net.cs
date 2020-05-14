@@ -1,19 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Linq;
-using System.Security.Cryptography;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace WindowsFormsApp3
 {
 
     class Net
     {
-        private readonly Color[] colors = new Color[5] { Color.Red, Color.Blue, Color.Green, Color.Yellow, Color.Black };
+        private readonly Color[] colors = new Color[6] { Color.Red, Color.Blue, Color.Green, Color.Yellow, Color.Orange, Color.Black };
 
-        Random r;
+        private readonly Random r;
         Graphics graphics;
         public int Height { get; set; }
         public int Width { get; set; }
@@ -22,7 +18,7 @@ namespace WindowsFormsApp3
         private float BallSize;
         private int N;
 
-        List<List<Ball>> balls;
+        List<Ball> balls;
 
         PointF Center { get; set; }
 
@@ -34,166 +30,213 @@ namespace WindowsFormsApp3
             CountEdge = countEdge;
             CountLevels = countLevels;
             Center = new PointF(Width / 2, Height / 2);
-            BallSize = Height / (6 * CountLevels);
+            BallSize = Height / (5 * CountLevels);
             N = 0;
             r = new Random(DateTime.Now.Millisecond);
-            balls = new List<List<Ball>>();
-            for (int i = 0; i < countEdge; i++)
-            {
-                balls.Add(new List<Ball>(countLevels));
-            }
+            balls = new List<Ball>();
             DrawMap();
             InitMap();
         }
-       
 
-        public int getBallNumber(float x, float y)
+        public int GetBallNumber(float x, float y)
         {
-            foreach (var o in balls)
+            foreach (var b in balls)
             {
-                foreach (var b in o)
+                if (Dist(new PointF(x, y), b.coord) <= BallSize / 2)
                 {
-                    if (dist(new PointF(x, y), b.coord) <= BallSize / 2)
-                    {
-                        return b.Id;
-                    }
+                    return b.Id;
                 }
-            }
+            }            
             return -1;
         }
-        public int getBallNumber(PointF x)
+        public int GetBallNumber(PointF x)
         {
-            return getBallNumber(x.X, x.Y);
+            return GetBallNumber(x.X, x.Y);
         }
 
         private Ball GetBall(int x)
         {
-            foreach (var o in balls)
-            {
-                foreach (var b in o)
-                {
-                    if (b.Id == x)
-                    {
-                        return b;
-                    }
-                }
-            }
-            return null;
+            if (x >= N) return null;
+            return balls[x];
         }
 
-        public Color getColor(int n)
+        public Color GetColor(int n)
         {
             return GetBall(n).color;
         }
-        public Color getColor(float x, float y)
+        public Color GetColor(float x, float y)
         {
-            return GetBall(getBallNumber(x, y)).color;
+            return GetBall(GetBallNumber(x, y)).color;
         }
-        public Color getColor(PointF x)
+        public Color GetColor(PointF x)
         {
-            return GetBall(getBallNumber(x)).color;
+            return GetBall(GetBallNumber(x)).color;
         }
 
-        public void setColor(int n, Color c)
+        public void SetColor(int n, Color c)
         {
             GetBall(n).color = c;
         }
-        public void setColor(float x, float y, Color c)
+        public void SetColor(float x, float y, Color c)
         {
-            GetBall(getBallNumber(x, y)).color = c;
+            GetBall(GetBallNumber(x, y)).color = c;
         }
-        public void setColor(PointF x, Color c)
+        public void SetColor(PointF x, Color c)
         {
-            GetBall(getBallNumber(x)).color = c;
+            GetBall(GetBallNumber(x)).color = c;
         }
 
-        public void moveBall(int n)
-        {
-            int axis = getAxis(n);
-            int k = -1;
-            if (axis == -1)
+        private void MoveBall(int n)
+        {     
+            for (int i = n; i >= CountEdge; i -= CountEdge)
             {
-                return;
+                balls[i].color = balls[i - CountEdge].color;
             }
-            for (int i = 0; i < balls[axis].Count; i++)
+            GenerateNewColor(GetAxis(n));
+        }
+        
+        public void Swap(float x, float y, float x1, float y1)
+        {
+            int number1 = GetBallNumber(x, y);
+            int number2 = GetBallNumber(x1, y1);
+
+            if (number1 != -1 && number2 != -1)
             {
-                if (balls[axis][i].Id == n)
+                var t = GetBall(number1).color;
+                GetBall(number1).color = GetBall(number2).color;
+                GetBall(number2).color = t;
+                Get();
+            }
+        }
+
+        private void GenerateNewColor(int n)
+        {
+            Color c = colors[r.Next(6)];
+            while (!CheckColor(n, c))
+            {
+                c = colors[r.Next(6)];
+            }
+            GetBall(n).color = c;
+        }
+        
+        private bool CheckColor(int n, Color c)
+        {
+            int k = 0;
+            foreach (var i in GetNeighors(n))
+            {
+                if (GetBall(i).color == c)
                 {
-                    k = i;
+                    k++;
                 }
             }
-            if (k == -1)
-            {
-                return;
-            }
-            for (int i = k; i > 0; i--)
-            {
-                balls[axis][i].color = balls[axis][i - 1].color;
-            }
-            GenerateNewBallAxis(axis);
+            return (k < 2) & (!(c == Color.Black && CheckBlack(n)));
         }
-        public void moveBall(float x, float y)
+        
+        // Есть ли на оси с шариком номер n еще один черный шарик
+        private bool CheckBlack(int n)
         {
-            moveBall(getBallNumber(x, y));
-        }
-
-        // TODO
-        private void GenerateNewBall(int n)
-        {
-            int axis = getAxis(n);
-            int k = -1;
-            if (axis == -1)
+            int ax = GetAxis(n);
+            for (int i = ax; i < N; i += CountEdge)
             {
-                return;
-            }
-            for (int i = 0; i < balls[axis].Count; i++)
-            {
-                if (balls[axis][i].Id == n)
+                if (GetBall(i).color == Color.Black)
                 {
-                    k = i;
+                    return true;
                 }
             }
-            
-            balls[axis][k].color = colors[r.Next(5)];
-        }
-        private void GenerateNewBallAxis(int x)
-        {
-            balls[x][0].color = colors[new Random().Next() % 5];
+            return false;
         }
 
-        //Можем ли шарик n покрасить в цвет c 
-        private bool checkColor(int n, Color c)
+        // Обход в глубину для поиска компонент связанности одного цвета
+        public void Get()
         {
-            // Проверить всех соседей
-            return true;
-        }
-
-        // Есть ли уже на оси axis черный шарик
-        private bool checkBlack(int axis)
-        {
-            return true;
-        }
-
-        // Как проверить и сделать так чтобы не было двух черных на оси
-
-        // Написать проверку трех и более шариков подряд
-
-        private int getAxis(int n)
-        {
-            for (int i = 0; i < CountEdge; i++)
+            List<int> l = new List<int>(4);
+            bool flag = true;
+            while (flag)
             {
-                foreach (var b in balls[i])
+                flag = false;
+                for (int i = 0; i < N; i++)
                 {
-                    if (b.Id == n)
-                    {
-                        return i;
+                    l.Clear();
+                    AddNeigbors(i, l);
+                    if (l.Count > 2)
+                    {                        
+                        SortCenter(l);
+                        for(int j = 0; j < l.Count; j++) { 
+                            MoveBall(l[j]);
+                        }
+                        flag = true;
+                        break;
                     }
                 }
             }
-            return -1;
+            DrawBalls();
+        }
+        private void AddNeigbors(int x, List<int> l)
+        {
+            l.Add(x);
+            foreach (var i in GetNeighors(x))
+            {
+                if (GetBall(i).color == GetBall(x).color && !l.Contains(i))
+                {
+                    AddNeigbors(i, l);
+                }
+            }            
+        }
+        //
+        // Сортировка пузырьком для шариков, по дальность удаления от центра
+        private void SortCenter(List<int> l)
+        {
+            for (int i = 0; i < l.Count; i++)
+            {
+                for (int j = 0; j < l.Count - 1; j++)
+                {
+                    if (l[j] / CountEdge > l[j + 1] / CountEdge)
+                    {
+                        var t = l[j];
+                        l[j] = l[j + 1];
+                        l[j + 1] = t;
+                    }
+                }
+            }
         }
 
-        private float dist(PointF x, PointF y)
+        private List<int> GetNeighors(int n)
+        {
+            List<int> res = new List<int>();
+            int level = n / CountEdge;
+            if ((n + 1) / CountEdge != level)
+            {
+                res.Add(level * CountEdge);
+            }
+            else
+            {
+                res.Add(n + 1);
+            }
+            if ((n - 1) / CountEdge != level || n - 1 < 0)
+            {
+                res.Add((level + 1) * CountEdge - 1);
+            }
+            else
+            {
+                res.Add(n - 1);
+            }
+            if (n + CountEdge < N)
+            {
+                res.Add(n + CountEdge);
+            }
+            if (n - CountEdge >= 0)
+            {
+                res.Add(n - CountEdge);
+            }
+            return res;
+        }
+
+        private int GetAxis(int n)
+        {
+            return n % CountEdge;
+        }
+
+        private float Dist(PointF x, PointF y)
         {
             return (float)(Math.Sqrt((x.X - y.X) * (x.X - y.X) + (x.Y - y.Y) * (x.Y - y.Y)));
         }
@@ -207,7 +250,7 @@ namespace WindowsFormsApp3
             return new PointF(x.X + delta.X, x.Y + delta.Y);
         }
 
-        private void octagon(int h, PointF center, int countEdge)
+        private void Octagon(int h, PointF center, int countEdge)
         {
             float angle = (float)(Math.PI * 2 / countEdge);
             List<PointF> p = new List<PointF>();
@@ -223,31 +266,45 @@ namespace WindowsFormsApp3
             {
                 var x = AddDelta(p[i], center);
                 var y = AddDelta(p[i + 1], center);
-                balls[i].Add(new Ball(graphics, x, Color.Gray, BallSize, N++));
+                balls.Add(new Ball(graphics, x, Color.Gray, BallSize, N++));
                 graphics.DrawLine(new Pen(Color.Black), x, y);
             }
             graphics.DrawLine(new Pen(Color.Black), AddDelta(p[0], center), AddDelta(p[countEdge - 1], center));
             var temp = AddDelta(p[countEdge - 1], center);
-            balls[countEdge - 1].Add(new Ball(graphics, temp, Color.Gray, BallSize, N++));
-            
+            balls.Add(new Ball(graphics, temp, Color.Gray, BallSize, N++));            
         }
 
         private void DrawMap()
         {
-            int r = Height / (3 * CountLevels);
+            int r = Height / CountLevels / 3;
 
             for (int i = 0; i < CountLevels; i++)
             {
-                octagon(r * (i + 1), Center, CountEdge);
+                Octagon(r * (i + 1), Center, CountEdge);
+            }
+            for (int i = 0; i < CountEdge; i++)
+            {
+                for (int j = i + CountEdge; j < N; j += CountEdge)
+                {
+                    graphics.DrawLine(new Pen(Color.Black), balls[j].coord, balls[j - CountEdge].coord);
+                }
             }
         }
         private void InitMap()
         {
-            for (int i = 0; i < CountLevels * CountEdge; i++)
+            for (int i = 0; i < N; i++)
             {
-                GenerateNewBall(i);
+                GenerateNewColor(i);
             }
+            Get();
         }
+        private void DrawBalls()
+        {
+            foreach (var i in balls)
+            {
+                i.Draw();
+            }
+        }        
     }
 }
 

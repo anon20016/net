@@ -1,0 +1,9 @@
+C:\Users\anon2\source\repos\WindowsFormsApp3\WindowsFormsApp3\bin\Release\WindowsFormsApp3.exe.config
+C:\Users\anon2\source\repos\WindowsFormsApp3\WindowsFormsApp3\bin\Release\WindowsFormsApp3.exe
+C:\Users\anon2\source\repos\WindowsFormsApp3\WindowsFormsApp3\bin\Release\WindowsFormsApp3.pdb
+C:\Users\anon2\source\repos\WindowsFormsApp3\WindowsFormsApp3\obj\Release\WindowsFormsApp3.csprojAssemblyReference.cache
+C:\Users\anon2\source\repos\WindowsFormsApp3\WindowsFormsApp3\obj\Release\WindowsFormsApp3.Properties.Resources.resources
+C:\Users\anon2\source\repos\WindowsFormsApp3\WindowsFormsApp3\obj\Release\WindowsFormsApp3.csproj.GenerateResource.cache
+C:\Users\anon2\source\repos\WindowsFormsApp3\WindowsFormsApp3\obj\Release\WindowsFormsApp3.csproj.CoreCompileInputs.cache
+C:\Users\anon2\source\repos\WindowsFormsApp3\WindowsFormsApp3\obj\Release\WindowsFormsApp3.exe
+C:\Users\anon2\source\repos\WindowsFormsApp3\WindowsFormsApp3\obj\Release\WindowsFormsApp3.pdb

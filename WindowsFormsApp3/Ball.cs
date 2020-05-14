@@ -13,16 +13,7 @@ namespace WindowsFormsApp3
         Graphics graphics;
         public PointF coord { get; set; }
         private Color _color;
-        public Color color
-        {
-            get { return _color; }
-            set
-            {
-                _color = value;
-                Draw();
-            }
-
-        }
+        public Color color { get; set; }        
         public float Radius { get; set; }
 
         public Ball(Graphics g, PointF p, Color c, float radius, int id)
@@ -34,9 +25,10 @@ namespace WindowsFormsApp3
             color = c;
         }
 
-        private void Draw()
+        public void Draw()
         {
             graphics.FillEllipse(new SolidBrush(color), coord.X - Radius / 2, coord.Y - Radius / 2, Radius, Radius);
+            //graphics.DrawString(Id.ToString(), new Font("Arial", 15), new SolidBrush(Color.Indigo), coord);
         }
 
     }
