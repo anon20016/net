@@ -51,8 +51,10 @@ namespace WindowsFormsApp3
 
         private void Refresh_Click(object sender, EventArgs e)
         {
-            net = new Net(bitmapGraphics, 10, pb.Width, pb.Height);
-            this.Refresh();
+            // Начало игры
+            net = new Net(bitmapGraphics, 6, pb.Width, pb.Height, pb, 8, numColors:6, true);
+            net.onScoreChaged += ScoreChange;
+            ScoreChange(-1);
         }
 
         private void Pb_Click(object sender, EventArgs e)
@@ -60,15 +62,48 @@ namespace WindowsFormsApp3
             MouseEventArgs e2 = (MouseEventArgs)e;
             if (bufer != null)
             {
-                net.Swap(e2.X, e2.Y, bufer.X, bufer.Y);
-                bufer = null;
+                if (net.Swap(e2.X, e2.Y, bufer.X, bufer.Y, 200))
+                {
+                    bufer = null;
+                }
+                else
+                {
+                    DeSelectBall(bufer.X, bufer.Y);
+                    bufer = null;
+                    pb.Refresh();
+                }                
             }
             else
             {
-                bufer = e2;
+                if (net.GetBallNumber(e2.X, e2.Y) != -1)
+                {
+                    bufer = e2;
+                    SelectBall(e2.X, e2.Y);
+                    pb.Refresh();
+                }
             }
-
-            pb.Refresh();
         }
+
+        private void SelectBall(float x, float y)
+        {
+            net.GetBall(net.GetBallNumber(x, y)).Select();
+        }
+        private void DeSelectBall(float x, float y)
+        {
+            net.GetBall(net.GetBallNumber(x, y)).DeSelect();
+        }
+    
+        private void ScoreChange(int s)
+        {
+            if (s == -1)
+            {
+                Controls["score"].Text = "Score: 0";
+            }
+            else
+            {
+                Controls["score"].Text = "Score: " + (Int32.Parse(Controls["score"].Text.Substring(7)) + s).ToString();
+                Controls["score"].Refresh();
+            }
+        }    
     }
 }

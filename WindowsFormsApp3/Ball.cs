@@ -12,7 +12,6 @@ namespace WindowsFormsApp3
         public int Id { get; set; }
         Graphics graphics;
         public PointF coord { get; set; }
-        private Color _color;
         public Color color { get; set; }        
         public float Radius { get; set; }
 
@@ -31,5 +30,15 @@ namespace WindowsFormsApp3
             //graphics.DrawString(Id.ToString(), new Font("Arial", 15), new SolidBrush(Color.Indigo), coord);
         }
 
+        public void Select()
+        {
+            graphics.DrawEllipse(new Pen(Color.White, 6), coord.X - Radius / 2 + 3, coord.Y - Radius / 2 + 3, Radius - 6, Radius - 6);
+            //graphics.DrawString(Id.ToString(), new Font("Arial", 15), new SolidBrush(Color.Indigo), coord);
+        }
+        public void DeSelect()
+        {
+            graphics.DrawEllipse(new Pen(color, 6), coord.X - Radius / 2 + 3, coord.Y - Radius / 2 + 3, Radius - 6, Radius - 6);
+            //graphics.DrawString(Id.ToString(), new Font("Arial", 15), new SolidBrush(Color.Indigo), coord);
+        }
     }
 }

@@ -1,4 +1,6 @@
-﻿namespace WindowsFormsApp3
+﻿using System.Windows.Forms;
+
+namespace WindowsFormsApp3
 {
     partial class Form1
     {
@@ -35,6 +37,18 @@
 
             this.Width = 1000;
             this.Height = 1000;
+
+            Label Score = new Label()
+            {
+                Name = "score",
+                Parent = this,
+                Width = Width - 100,
+                Height = 100,
+                Left = 100,
+                Text = "Score: 0",
+                Font = new System.Drawing.Font("Arual", 40),
+                TextAlign = System.Drawing.ContentAlignment.MiddleCenter
+            };
         }
 
         #endregion

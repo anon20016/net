@@ -1,13 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Threading;
+using System.Windows.Forms;
 
 namespace WindowsFormsApp3
 {
 
     class Net
     {
-        private readonly Color[] colors = new Color[6] { Color.Red, Color.Blue, Color.Green, Color.Yellow, Color.Orange, Color.Black };
+        public delegate void RefreshScore(int s);
+        public event RefreshScore onScoreChaged;
+
+        private readonly Color[] colors = new Color[10] { Color.Black, Color.Red, Color.Blue, Color.Green, Color.Yellow, Color.Orange, Color.Violet, Color.Brown, Color.GreenYellow, Color.DeepPink };
 
         private readonly Random r;
         Graphics graphics;
@@ -15,25 +20,48 @@ namespace WindowsFormsApp3
         public int Width { get; set; }
         public int CountLevels {get; set;}
         public int CountEdge { get; set; }
+        public int CountColors { get; set; }
         private float BallSize;
         private int N;
+        private readonly GameEndHandler gameEndHandler;
+
+        PictureBox pb;
 
         List<Ball> balls;
 
         PointF Center { get; set; }
 
-        public Net(Graphics g, int countLevels, int width, int heght, int countEdge = 8)
+        /// <summary>
+        /// Генерация новой игры с полем
+        /// </summary>
+        /// <param name="g">класс Graphics, где отрисовывается поле</param>
+        /// <param name="countLevels">Количество слоём многоугольников</param>
+        /// <param name="width">Ширина поля для отрисовки</param>
+        /// <param name="heght">Высота поля для отрисовки</param>
+        /// <param name="picture">PictureBox для обновления состояний</param>
+        /// <param name="countEdge">Количесвто углов в многоугольнике</param>
+        /// <param name="numColors">Количество цветов в игре (5 - 10)</param>
+        /// <param name="black">Флаг присутствия черного шарика в игре</param>
+        public Net(Graphics g, int countLevels, int width, int heght, PictureBox picture, int countEdge = 8, int numColors = 6, bool black = true)
         {
+            if (!black)
+            {
+                colors[0] = Color.Chocolate;
+            }
             graphics = g;
             Height = heght;
             Width = width;
             CountEdge = countEdge;
             CountLevels = countLevels;
+            CountColors = (numColors < 5 || numColors > 10) ? 5 : numColors;
             Center = new PointF(Width / 2, Height / 2);
             BallSize = Height / (5 * CountLevels);
             N = 0;
             r = new Random(DateTime.Now.Millisecond);
             balls = new List<Ball>();
+            pb = picture;
+            gameEndHandler = new GameEndHandler(CountEdge);
+            gameEndHandler.OnGameEnded += GameEnd;
             DrawMap();
             InitMap();
         }
@@ -54,21 +82,21 @@ namespace WindowsFormsApp3
             return GetBallNumber(x.X, x.Y);
         }
 
-        private Ball GetBall(int x)
+        public Ball GetBall(int x)
         {
             if (x >= N) return null;
             return balls[x];
         }
 
-        public Color GetColor(int n)
+        private Color GetColor(int n)
         {
             return GetBall(n).color;
         }
-        public Color GetColor(float x, float y)
+        private Color GetColor(float x, float y)
         {
             return GetBall(GetBallNumber(x, y)).color;
         }
-        public Color GetColor(PointF x)
+        private Color GetColor(PointF x)
         {
             return GetBall(GetBallNumber(x)).color;
         }
@@ -87,7 +115,11 @@ namespace WindowsFormsApp3
         }
 
         private void MoveBall(int n)
-        {     
+        {
+            if (GetColor(n) == Color.Black)
+            {
+                gameEndHandler.addAxisDone(GetAxis(n));
+            }
             for (int i = n; i >= CountEdge; i -= CountEdge)
             {
                 balls[i].color = balls[i - CountEdge].color;
@@ -95,26 +127,61 @@ namespace WindowsFormsApp3
             GenerateNewColor(GetAxis(n));
         }
         
-        public void Swap(float x, float y, float x1, float y1)
+        public bool Swap(float x, float y, float x1, float y1, int sleep = 500)
         {
             int number1 = GetBallNumber(x, y);
             int number2 = GetBallNumber(x1, y1);
 
-            if (number1 != -1 && number2 != -1)
+            if (number1 == -1 || number2 == -1)
+            {
+                return false;
+            }
+
+            if (GetColor(number1) == Color.Black || GetColor(number2) == Color.Black)
+            {
+                return false;
+            }
+
+            if (isNeighor(number1, number2))
             {
                 var t = GetBall(number1).color;
                 GetBall(number1).color = GetBall(number2).color;
                 GetBall(number2).color = t;
-                Get();
+                DrawBalls(sleep / 2);
+
+                int addscore = MapResearch(sleep);
+                if (addscore == 0)
+                {
+                    t = GetBall(number1).color;
+                    GetBall(number1).color = GetBall(number2).color;
+                    GetBall(number2).color = t;
+                    DrawBalls(500);
+                }
+                else
+                {
+                    onScoreChaged?.Invoke(addscore);
+                    return true;
+                }
             }
+            return false;
         }
 
-        private void GenerateNewColor(int n)
+        private bool isNeighor(int number1, int number2)
         {
-            Color c = colors[r.Next(6)];
+            return GetNeighors(number1).Contains(number2);
+        }
+
+        /// <summary>
+        /// Генерирует случайный цвет для шарика с номером n
+        /// </summary>
+        /// <param name="n">Номер шарика</param>
+        /// <param name="canBlack">Нужно ли ставить черный шарик, 1 - не нужно, 0 - нужно</param>
+        private void GenerateNewColor(int n, int canBlack = 1)
+        {
+            Color c = colors[canBlack + r.Next(CountColors - canBlack)];
             while (!CheckColor(n, c))
             {
-                c = colors[r.Next(6)];
+                c = colors[r.Next(CountColors)];
             }
             GetBall(n).color = c;
         }
@@ -122,6 +189,17 @@ namespace WindowsFormsApp3
         private bool CheckColor(int n, Color c)
         {
             int k = 0;
+            if (c == Color.Black)
+            {
+                if (!gameEndHandler.canAddAxis(GetAxis(n))){
+                    return false;
+                }
+                else
+                {
+                    gameEndHandler.addAxisAll(GetAxis(n));
+                    return true;
+                }
+            }
             foreach (var i in GetNeighors(n))
             {
                 if (GetBall(i).color == c)
@@ -129,47 +207,43 @@ namespace WindowsFormsApp3
                     k++;
                 }
             }
-            return (k < 2) & (!(c == Color.Black && CheckBlack(n)));
+            return (k < 2);
         }
         
-        // Есть ли на оси с шариком номер n еще один черный шарик
-        private bool CheckBlack(int n)
-        {
-            int ax = GetAxis(n);
-            for (int i = ax; i < N; i += CountEdge)
-            {
-                if (GetBall(i).color == Color.Black)
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-
         // Обход в глубину для поиска компонент связанности одного цвета
-        public void Get()
+        public int MapResearch(int sleep = 0)
         {
             List<int> l = new List<int>(4);
             bool flag = true;
+            int count = 0;
             while (flag)
             {
                 flag = false;
                 for (int i = 0; i < N; i++)
                 {
-                    l.Clear();
-                    AddNeigbors(i, l);
-                    if (l.Count > 2)
-                    {                        
-                        SortCenter(l);
-                        for(int j = 0; j < l.Count; j++) { 
-                            MoveBall(l[j]);
-                        }
+                    if (i / CountEdge == CountLevels - 1 && GetColor(i) == Color.Black)
+                    {
+                        MoveBall(i);
                         flag = true;
                         break;
                     }
+                    l.Clear();
+                    AddNeigbors(i, l);
+                    if (l.Count > 2)
+                    {
+                        SortCenter(l);
+                        for (int j = 0; j < l.Count; j++)
+                        {
+                            MoveBall(l[j]);
+                        }
+                        flag = true;
+                        count += l.Count;
+                    }
+                    
                 }
+                DrawBalls(sleep);
             }
-            DrawBalls();
+            return count;
         }
         private void AddNeigbors(int x, List<int> l)
         {
@@ -200,6 +274,11 @@ namespace WindowsFormsApp3
             }
         }
 
+        /// <summary>
+        /// Полчить список всех соседей данного шарика
+        /// </summary>
+        /// <param name="n"></param>
+        /// <returns></returns>
         private List<int> GetNeighors(int n)
         {
             List<int> res = new List<int>();
@@ -294,18 +373,34 @@ namespace WindowsFormsApp3
         {
             for (int i = 0; i < N; i++)
             {
-                GenerateNewColor(i);
+                GenerateNewColor(i, 0);
             }
-            Get();
+            MapResearch();           
         }
-        private void DrawBalls()
+        private void DrawBalls(int sleep = 0, List<int> update = null)
         {
-            foreach (var i in balls)
+            if (update == null)
             {
-                i.Draw();
+                foreach (var i in balls)
+                {
+                    i.Draw();
+                }
             }
+            else
+            {
+                foreach(var i in update)
+                {
+                    GetBall(i).Draw();
+                }
+            }
+            pb.Refresh();
+            Thread.Sleep(sleep);
         }        
+
+        private void GameEnd()
+        {
+            graphics.DrawString("You Win!!", new Font("Arial", 100), new SolidBrush(Color.Black), new PointF(0, 400));
+            pb.Refresh();
+        }
     }
 }
-
-
