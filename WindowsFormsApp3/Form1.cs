@@ -19,8 +19,23 @@ namespace WindowsFormsApp3
 
         public Form1()
         {
+            //this.Size = new Size(1000, 1000);
             InitializeComponent();
-            
+
+            Label Score = new Label()
+            {
+                Name = "Score",
+                Parent = this,
+                Left = 100,
+                Top = 0,
+                Text = "Score: 0",
+                Width = Width - 100,
+                Height = 100,
+                Font = new Font("Arial", 30),
+                TextAlign = ContentAlignment.MiddleCenter
+            };
+
+
             pb = new PictureBox()
             {
                 Width = Width - 100,
@@ -97,13 +112,18 @@ namespace WindowsFormsApp3
         {
             if (s == -1)
             {
-                Controls["score"].Text = "Score: 0";
+                this.Controls["Score"].Text = "Score: 0";
             }
             else
             {
-                Controls["score"].Text = "Score: " + (Int32.Parse(Controls["score"].Text.Substring(7)) + s).ToString();
-                Controls["score"].Refresh();
+                Controls["Score"].Text = "Score: " + (Int32.Parse(Controls["Score"].Text.Substring(7)) + s).ToString();
+                Controls["Score"].Refresh();
             }
-        }    
+        }
+
+        private void Form1_Load(object sender, EventArgs e)
+        {
+
+        }
     }
 }
