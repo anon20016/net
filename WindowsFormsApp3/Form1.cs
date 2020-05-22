@@ -36,32 +36,86 @@ namespace WindowsFormsApp3
             };
 
 
-            pb = new PictureBox()
-            {
-                Width = Width - 100,
-                Height = Height - 100,
-                Top = 100,
-                Left = 100,
-                Parent = this,
-                BackColor = Color.LightCyan
-            };
+           
+            
+            
 
-            Bitmap myBitmap = new Bitmap(pb.Width, pb.Height);
-            bitmapGraphics = Graphics.FromImage(myBitmap);
-            Button refresh = new Button()
+            Score.Hide();
+            Panel titul = new Panel()
             {
+                Name = "main",
                 Parent = this,
                 Top = 0,
                 Left = 0,
+                Width = Width,
+                Height = Height,
+                BackColor = Color.White,
+            };
+            titul.Click += Titul_Click;
+            Panel main = new Panel()
+            {
+                Name = "main",
+                Parent = this,
+                Top = 0,
+                Left = 0,
+                Width = Width,
+                Height = Height,
+                BackColor = Color.Red
+            };
+            Panel settings = new Panel()
+            {
+                Parent = main,
+                BackColor = Color.Blue,
+                Left = main.Width / 4,
+                Top = 0,
+                Width = main.Width / 4 * 3,
+                Height = main.Height
+            };
+            settings.Hide();
+            Panel game = new Panel()
+            {
+                Parent = main,
+                BackColor = Color.Green,
+                Left = main.Width / 4,
+                Top = 0,
+                Width = main.Width / 4 * 3,
+                Height = main.Height
+            };
+            int mapsize = game.Width < game.Height ? game.Width : game.Height;
+            pb = new PictureBox()
+            {
+                Width = mapsize,
+                Height = mapsize,
+                Top = game.Height - mapsize,
+                Left = 0,
+                Parent = game,
+                BackColor = Color.LightCyan
+            };
+            Bitmap myBitmap = new Bitmap(pb.Width, pb.Height);
+            bitmapGraphics = Graphics.FromImage(myBitmap);
+
+            Button refresh = new Button()
+            {
+                Parent = main,
+                Top = 200,
+                Left = 0,
+                Height = 200, 
+                Width = main.Width / 4,
                 Text = "Refresh"
             };
             refresh.Click += Refresh_Click;
+
 
             pb.Image = myBitmap;
                        
 
             pb.Click += Pb_Click;
             bufer = null;
+        }
+
+        private void Titul_Click(object sender, EventArgs e)
+        {
+            (sender as Panel).Hide();
         }
 
         private void Refresh_Click(object sender, EventArgs e)
